@@ -1,12 +1,33 @@
-var express = require("express");
+const express = require("express");
+const router = express.Router();
+
 const bodyParser = require("body-parser");
-var User = require("../models/user");
-var passport = require("passport");
-var router = express.Router();
-var authenticate = require("../authenticate");
+const User = require("../models/user");
+const passport = require("passport");
+const authenticate = require("../authenticate");
+
 router.use(bodyParser.json());
 
 /* GET users listing. */
+router.get("/", authenticate.verifyUser, authenticate.verifyAdmin, function (
+	req,
+	res,
+	next
+) {
+	User.find({})
+		.then(
+			(err, users) => {
+				if (err) {
+					return next(err);
+				}
+				res.statusCode = 200;
+				res.setHeader("Content-Type", "application/json");
+				res.json(users);
+			},
+			(err) => next(err)
+		)
+		.catch((err) => next(err));
+});
 
 router.post("/signup", (req, res, next) => {
 	User.register(
@@ -39,7 +60,7 @@ router.post("/signup", (req, res, next) => {
 });
 
 router.post("/login", passport.authenticate("local"), (req, res) => {
-	var token = authenticate.getToken({ _id: req.user._id });
+	const token = authenticate.getToken({ _id: req.user._id });
 	res.statusCode = 200;
 	res.setHeader("Content-Type", "application/json");
 	res.json({
@@ -55,7 +76,7 @@ router.get("/logout", (req, res) => {
 		res.clearCookie("session-id");
 		res.redirect("/");
 	} else {
-		var err = new Error("You are not logged in!");
+		const err = new Error("You are not logged in!");
 		err.status = 403;
 		next(err);
 	}
